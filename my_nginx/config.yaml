@@ -1,0 +1,17 @@
+---
+version: 0.1.0
+slug: my_nginx
+name: My NGINX
+description: Fully custom NGINX instance
+init: false
+hassio_api: true
+arch:
+  - aarch64
+  - amd64
+map:
+  - ssl
+  - homeassistant_config
+ports:
+  443/tcp: 443
+  80/tcp: 80
+
