@@ -1,0 +1,9 @@
+MusicFolder = "%%MUSIC_FOLDER%%"
+LogLevel = "warn"
+BaseUrl = "%%BASE_URL%%"
+DefaultLanguage = "%%DEFAULT_LANGUAGE%%"
+EnableSharing = %%ENABLE_SHARING%%
+EnableStarRating = %%ENABLE_STAR_RATING%%
+EnableFavourites = %%ENABLE_FAVOURITES%%
+EnableUserEditing = %%ENABLE_USER_EDITING%%
+PasswordEncryptionKey = "%%SECRET%%"

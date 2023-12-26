@@ -1,0 +1,32 @@
+---
+version: 0.1.0
+slug: navidrome
+name: Navidrome
+description: Modern Music Server and Streamer compatible with Subsonic/Airsonic
+init: false
+hassio_api: true
+arch:
+  - aarch64
+  - amd64
+map:
+  - addon_config:rw
+  - media
+ports:
+  4533/tcp: null
+options:
+  music_folder: /media/Music
+  base_url: /navidrome
+  default_language: en
+  enable_sharing: false
+  enable_star_rating: false
+  enable_favourites: false
+  enable_user_editing: false
+schema:
+  music_folder: str
+  base_url: str
+  default_language: str
+  enable_sharing: bool
+  enable_star_rating: bool
+  enable_favourites: bool
+  enable_user_editing: bool
+
