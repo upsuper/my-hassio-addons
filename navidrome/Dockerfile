@@ -8,7 +8,8 @@ RUN apk add --no-cache ffmpeg pwgen \
     && if [[ "${BUILD_ARCH}" = "aarch64" ]]; then ARCH="arm64"; fi \
     && URL="https://github.com/navidrome/navidrome/releases/download/v${NAVIDROME_VERSION}/navidrome_${NAVIDROME_VERSION}_linux_${ARCH}.tar.gz" \
     && echo "Downloading ${URL}..." \
-    && curl -L -s "${URL}" | tar -zxvf - navidrome -C /
+    && curl -L -s "${URL}" | tar -zxvf - navidrome -C / \
+    && chmod +x /navidrome
 
 COPY rootfs /
 
