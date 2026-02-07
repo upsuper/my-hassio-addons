@@ -1,0 +1,59 @@
+name: Bump Navidrome Version
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get current version
+        id: current
+        run: |
+          version=$(grep 'NAVIDROME_VERSION:' navidrome/build.yaml | awk '{print $2}')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Get latest Navidrome release
+        id: latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(gh api repos/navidrome/navidrome/releases/latest --jq '.tag_name' | sed 's/^v//')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Bump version
+        if: steps.current.outputs.version != steps.latest.outputs.version
+        run: |
+          new_navidrome="${{ steps.latest.outputs.version }}"
+          sed -i "s/NAVIDROME_VERSION: .*/NAVIDROME_VERSION: ${new_navidrome}/" navidrome/build.yaml
+
+          addon_version=$(grep '^version:' navidrome/config.yaml | awk '{print $2}')
+          IFS='.' read -r major minor patch <<< "$addon_version"
+          new_addon="${major}.${minor}.$((patch + 1))"
+          sed -i "s/^version: .*/version: ${new_addon}/" navidrome/config.yaml
+
+      - name: Create Pull Request
+        if: steps.current.outputs.version != steps.latest.outputs.version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          new_navidrome="${{ steps.latest.outputs.version }}"
+          branch="bump-navidrome-${new_navidrome}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add navidrome/build.yaml navidrome/config.yaml
+          git commit -m "Bump Navidrome to ${new_navidrome}"
+          git push origin "$branch"
+          gh pr create \
+            --title "Bump Navidrome to ${new_navidrome}" \
+            --body "Navidrome [${new_navidrome}](https://github.com/navidrome/navidrome/releases/tag/v${new_navidrome}) has been released." \
+            --head "$branch"
