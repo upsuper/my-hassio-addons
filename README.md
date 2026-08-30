@@ -12,6 +12,10 @@ Modern Music Server and Streamer compatible with Subsonic/Airsonic.
 
 Fully custom NGINX instance.
 
+### [Speedtest](./speedtest)
+
+Run Speedtest.net measurements through an internal HTTP API.
+
 ## Installation
 
 1. Navigate to **Settings** → **Add-ons** → **Add-on Store** in Home Assistant.

@@ -1,0 +1,20 @@
+---
+version: 0.1.0
+slug: speedtest
+name: Speedtest
+description: Run Speedtest.net measurements through an internal HTTP API
+init: false
+hassio_api: false
+homeassistant_api: false
+auth_api: false
+arch:
+  - aarch64
+  - amd64
+ports:
+  8080/tcp: null
+ports_description:
+  8080/tcp: Internal HTTP API
+options:
+  server_id: null
+schema:
+  server_id: int?

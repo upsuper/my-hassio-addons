@@ -1,0 +1,8 @@
+---
+build_from:
+  aarch64: ghcr.io/home-assistant/aarch64-base:3.22
+  amd64: ghcr.io/home-assistant/amd64-base:3.22
+args:
+  SPEEDTEST_VERSION: 1.2.0
+  SPEEDTEST_SHA256_AARCH64: 3953d231da3783e2bf8904b6dd72767c5c6e533e163d3742fd0437affa431bd3
+  SPEEDTEST_SHA256_AMD64: 5690596c54ff9bed63fa3732f818a05dbc2db19ad36ed68f21ca5f64d5cfeeb7
