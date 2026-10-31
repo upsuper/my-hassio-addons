@@ -16,6 +16,11 @@ Fully custom NGINX instance.
 
 Run Speedtest.net measurements through an internal HTTP API.
 
+### [Powerwall](./powerwall/DOCS.md)
+
+Control Powerwall battery power from Home Assistant through an internal,
+v1r-only REST API, without cloud fallback.
+
 ## Installation
 
 1. Navigate to **Settings** → **Add-ons** → **Add-on Store** in Home Assistant.

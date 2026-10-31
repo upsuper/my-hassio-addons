@@ -1,0 +1,25 @@
+---
+version: 0.1.0
+slug: powerwall
+name: Powerwall
+description: Control battery power through an internal, v1r-only REST API
+url: https://github.com/upsuper/my-hassio-addons/tree/main/powerwall
+init: false
+hassio_api: false
+homeassistant_api: false
+auth_api: false
+host_network: false
+ingress: false
+arch:
+  - aarch64
+  - amd64
+map:
+  - app_config:ro
+options:
+  host: ""
+  gw_pwd: ""
+  rsa_key_filename: tedapi_rsa_private.pem
+schema:
+  host: str
+  gw_pwd: password
+  rsa_key_filename: str

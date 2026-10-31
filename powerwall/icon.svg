@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="background" x2="1" y2="1">
+      <stop stop-color="#28383e"/>
+      <stop offset="1" stop-color="#142227"/>
+    </linearGradient>
+    <linearGradient id="panel" x2="1" y2="0.7">
+      <stop stop-color="#ffffff"/>
+      <stop offset="0.6" stop-color="#f1f2ef"/>
+      <stop offset="1" stop-color="#d9deda"/>
+    </linearGradient>
+    <linearGradient id="edge" x2="1">
+      <stop stop-color="#384348"/>
+      <stop offset="1" stop-color="#10191d"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="48" fill="url(#background)"/>
+  <ellipse cx="132" cy="231" rx="78" ry="9" fill="#0b171c" opacity="0.6"/>
+  <rect x="65" y="25" width="137" height="204" rx="19" fill="url(#edge)"/>
+  <rect x="54" y="25" width="139" height="204" rx="19" fill="url(#panel)"/>
+  <rect x="55" y="26" width="137" height="202" rx="18" fill="none" stroke="#ffffff" opacity="0.65"/>
+  <path d="M72 216h103" stroke="#c9ceca" stroke-linecap="round"/>
+  <text x="124" y="62" text-anchor="middle" fill="#596165"
+        font-family="DejaVu Sans, sans-serif" font-size="11" font-weight="bold"
+        letter-spacing="3">TESLA</text>
+  <rect x="196" y="63" width="3" height="35" rx="1.5" fill="#86e7ae"/>
+</svg>
