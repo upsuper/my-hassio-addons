@@ -1,5 +1,5 @@
 ---
-version: 0.1.0
+version: 0.1.1
 slug: powerwall
 name: Powerwall
 description: Control battery power through an internal, v1r-only REST API

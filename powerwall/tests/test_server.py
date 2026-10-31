@@ -168,6 +168,26 @@ class ControllerTests(unittest.TestCase):
 
 
 class StartupTests(unittest.TestCase):
+    def test_log_format_includes_timestamp_and_timezone(self):
+        with (
+            patch.object(logging, "basicConfig") as configure,
+            patch.object(server, "load_options", side_effect=ValueError),
+            patch.object(logging.Logger, "addFilter"),
+            self.assertRaises(SystemExit),
+        ):
+            server.main()
+        formatter = logging.Formatter(
+            configure.call_args.kwargs["format"],
+            datefmt=configure.call_args.kwargs["datefmt"],
+        )
+        record = server.LOGGER.makeRecord(
+            "powerwall", logging.INFO, "", 0, "request", (), None
+        )
+        self.assertRegex(
+            formatter.format(record),
+            r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4} INFO: request$",
+        )
+
     def test_only_dispatch_acceptance_warning_is_suppressed(self):
         logger = logging.getLogger("pypowerwall.tedapi.tedapi_v1r")
         with (
@@ -255,6 +275,35 @@ class HTTPTests(unittest.TestCase):
                 self.controller.execute.return_value = body
                 self.assertEqual(self.post_json(body), (200, body))
                 self.controller.execute.assert_called_with("dispatch_battery_power", body)
+
+    def test_dispatch_log_includes_validated_parameters_even_on_gateway_failure(self):
+        body = {"power_watts": -1500, "duration_seconds": 60}
+        for status in (200, 502):
+            with self.subTest(status=status):
+                self.controller.execute.return_value = body
+                self.controller.execute.side_effect = (
+                    server.GatewayError() if status == 502 else None
+                )
+                with self.assertLogs(server.LOGGER, level="INFO") as logs:
+                    self.assertEqual(self.post_json(body)[0], status)
+                self.assertIn(
+                    f'127.0.0.1 - "POST /battery/dispatch HTTP/1.1" {status} -'
+                    ' params={"power_watts":-1500,"duration_seconds":60}',
+                    logs.output[-1],
+                )
+
+    def test_resume_log_includes_empty_parameters(self):
+        self.controller.execute.return_value = {"resume_battery_operation": True}
+        with self.assertLogs(server.LOGGER, level="INFO") as logs:
+            self.assertEqual(self.request("/battery/resume")[0], 200)
+        self.assertIn(" params={}", logs.output[-1])
+
+    def test_invalid_parameters_are_not_logged(self):
+        body = {"power_watts": "sensitive-value", "duration_seconds": 60}
+        with self.assertLogs(server.LOGGER, level="INFO") as logs:
+            self.assertEqual(self.post_json(body)[0], 400)
+        self.assertNotIn("sensitive-value", "\n".join(logs.output))
+        self.assertNotIn("params=", "\n".join(logs.output))
 
     def test_invalid_dispatch_never_calls_gateway(self):
         invalid = [None, [], {}, {"power_watts": 1}, {"power_watts": 1, "duration_seconds": 1, "extra": 1}]

@@ -165,6 +165,7 @@ class BatteryHandler(BaseHTTPRequestHandler):
             self.send_json(400, {"error": str(error)})
             return
 
+        self.request_parameters = body
         controller = self.server.controller
         if not controller.lock.acquire(blocking=False):
             self.send_json(409, {"error": "Another battery operation is in progress"})
@@ -189,11 +190,20 @@ class BatteryHandler(BaseHTTPRequestHandler):
             self.send_json(404, {"error": "Not found"})
 
     def log_message(self, message, *args):
-        LOGGER.info("%s - %s", self.address_string(), message % args)
+        parameters = getattr(self, "request_parameters", None)
+        suffix = (
+            " params=" + json.dumps(parameters, separators=(",", ":"), allow_nan=False)
+            if parameters is not None else ""
+        )
+        LOGGER.info("%s - %s%s", self.address_string(), message % args, suffix)
 
 
 def main():
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s: %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S%z",
+    )
     logging.getLogger("pypowerwall.tedapi.tedapi_v1r").addFilter(
         lambda record: not (
             record.levelno == logging.WARNING
