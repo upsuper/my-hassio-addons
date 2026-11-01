@@ -5,7 +5,7 @@ import tempfile
 import threading
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import pypowerwall
 
@@ -241,6 +241,7 @@ class StartupTests(unittest.TestCase):
 
 class HTTPTests(unittest.TestCase):
     def setUp(self):
+        self.sleep = self.enterContext(patch.object(server.time, "sleep"))
         self.controller = Mock(lock=threading.Lock())
         self.httpd = server.ThreadingHTTPServer(("127.0.0.1", 0), server.BatteryHandler)
         self.httpd.controller = self.controller
@@ -275,6 +276,7 @@ class HTTPTests(unittest.TestCase):
                 self.controller.execute.return_value = body
                 self.assertEqual(self.post_json(body), (200, body))
                 self.controller.execute.assert_called_with("dispatch_battery_power", body)
+        self.sleep.assert_not_called()
 
     def test_dispatch_log_includes_validated_parameters_even_on_gateway_failure(self):
         body = {"power_watts": -1500, "duration_seconds": 60}
@@ -352,11 +354,51 @@ class HTTPTests(unittest.TestCase):
         self.controller.execute.side_effect = server.GatewayError("secret")
         status, body = self.request("/battery/resume")
         self.assertEqual(status, 502)
+        self.assertEqual(self.controller.execute.call_count, 4)
+        self.sleep.assert_has_calls([call(10), call(20), call(40)])
+        self.assertEqual(self.sleep.call_count, 3)
         self.assertNotIn("secret", body["error"])
         self.assertFalse(self.controller.lock.locked())
         self.controller.execute.side_effect = None
         self.controller.execute.return_value = {"resume_battery_operation": True}
         self.assertEqual(self.request("/battery/resume")[0], 200)
+
+    def test_gateway_retries_stop_on_success(self):
+        for path, parameters in (
+            ("/battery/dispatch", {"power_watts": -1500, "duration_seconds": 60}),
+            ("/battery/resume", {}),
+        ):
+            for failures in (1, 2, 3):
+                with self.subTest(path=path, failures=failures):
+                    self.controller.execute.reset_mock()
+                    self.sleep.reset_mock()
+                    result = {"acknowledged": True}
+                    self.controller.execute.side_effect = (
+                        [server.GatewayError()] * failures + [result]
+                    )
+                    self.assertEqual(self.post_json(parameters, path), (200, result))
+                    self.assertEqual(
+                        self.controller.execute.call_args_list,
+                        [call(server.ROUTES[path], parameters)] * (failures + 1),
+                    )
+                    self.assertEqual(
+                        self.sleep.call_args_list,
+                        [call(delay) for delay in (10, 20, 40)[:failures]],
+                    )
+                    self.assertFalse(self.controller.lock.locked())
+
+    def test_retry_backoff_keeps_operation_lock(self):
+        result = {"resume_battery_operation": True}
+        self.controller.execute.side_effect = [server.GatewayError(), result]
+
+        def check_lock(delay):
+            self.assertTrue(self.controller.lock.locked())
+            self.assertEqual(self.request("/battery/resume")[0], 409)
+
+        self.sleep.side_effect = check_lock
+        self.assertEqual(self.request("/battery/resume"), (200, result))
+        self.assertEqual(self.controller.execute.call_count, 2)
+        self.assertFalse(self.controller.lock.locked())
 
 
 if __name__ == "__main__":

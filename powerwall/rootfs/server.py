@@ -2,6 +2,7 @@ import json
 import logging
 import math
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -14,6 +15,8 @@ ROUTES = {
     "/battery/resume": "resume_battery_operation",
 }
 MAX_BODY_SIZE = 4096
+MAX_GATEWAY_RETRIES = 3
+GATEWAY_RETRY_DELAY = 10
 
 
 def load_options(options_path="/data/options.json", config_path="/config"):
@@ -106,7 +109,7 @@ class BatteryController:
                 raise GatewayError()
             return result
         except Exception as error:
-            # Reconnect locally on the next request; never retry a battery command.
+            # Reconnect locally on the next attempt.
             self.client = None
             LOGGER.warning("Local v1r operation failed or was not acknowledged")
             raise GatewayError() from error
@@ -171,11 +174,20 @@ class BatteryHandler(BaseHTTPRequestHandler):
             self.send_json(409, {"error": "Another battery operation is in progress"})
             return
         try:
-            try:
-                result = controller.execute(operation, body)
-            except GatewayError:
-                self.send_json(502, {"error": "Local v1r operation failed or was not acknowledged"})
-                return
+            for attempt in range(MAX_GATEWAY_RETRIES + 1):
+                try:
+                    result = controller.execute(operation, body)
+                    break
+                except GatewayError:
+                    if attempt == MAX_GATEWAY_RETRIES:
+                        self.send_json(502, {"error": "Local v1r operation failed or was not acknowledged"})
+                        return
+                    delay = GATEWAY_RETRY_DELAY * 2**attempt
+                    LOGGER.warning(
+                        "Local v1r operation failed; retrying in %s seconds (%s/%s)",
+                        delay, attempt + 1, MAX_GATEWAY_RETRIES,
+                    )
+                    time.sleep(delay)
             self.send_json(200, result)
         finally:
             controller.lock.release()
